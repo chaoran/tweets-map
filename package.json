@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/chaoran/tweets-map/issues"
   },
-  "homepage": "https://github.com/chaoran/tweets-map#readme"
+  "homepage": "https://github.com/chaoran/tweets-map#readme",
+  "dependencies": {
+    "twit": "^2.2.2"
+  }
 }
