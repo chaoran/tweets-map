@@ -50,7 +50,7 @@ function sample(keypath, total, filepath, done) {
       );
     }
   });
-};
+}
 
 /**
  * Execute if this script is called directly.

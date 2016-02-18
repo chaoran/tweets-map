@@ -32,5 +32,7 @@ module.exports = function(grunt) {
       sample(options.keys, options.total, options.output, done);
     }
   );
+
+  grunt.registerTask('default', ['jshint']);
 };
 
