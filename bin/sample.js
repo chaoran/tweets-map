@@ -1,6 +1,9 @@
 var fs = require('fs');
-var Stream = require('../lib/stream');
 var grunt = require('grunt');
+
+var stream = require('../lib/stream');
+var parse = require('../lib/parse');
+var dump = require('../lib/dump');
 
 /**
  * Take a number of sample tweets from Twitter and writes into a file.
@@ -17,38 +20,34 @@ function sample(keypath, total, filepath, done) {
    */
   var keys = grunt.file.readJSON(keypath);
 
-  /** Create tweet stream. */
-  var stream = new Stream(keys);
+  /** Create tweets stream. */
+  var input = stream(keys, total);
 
-  /** Create output file stream. */
-  var output = fs.createWriteStream(filepath);
+  /** Create parse stream. */
+  var parser = parse();
+
+  /** Create dump stream. */
+  var output = dump(filepath);
 
   console.log('Sampling %d tweets from Twitter...', total);
 
   /** Start timeing region. */
   var time = Date.now();
-  var count = 0;
 
-  stream.on('tweet', function(tweet) {
-    var str = tweet.id + ' ' + tweet.coordinates.join(',') + '\n';
-    output.write(str);
+  input.pipe(parser).pipe(output);
 
-    if (++count >= total) {
-      /** End timeing region. */
-      time = Date.now() - time;
-      rate = total * 1000 / time;
+  output.on('close', function() {
+    /** End timeing region. */
+    time = Date.now() - time;
+    rate = total * 1000 / time;
 
-      stream.stop();
-      output.end();
-
-      console.log(
-        'Completed in %d seconds (%d tweets per second).',
-        time / 1000, rate.toFixed(2)
-      );
-      console.log(
-        'Sampled tweets are saved in %s', filepath
-      );
-    }
+    console.log(
+      'Completed in %d seconds (%d tweets per second).',
+      time / 1000, rate.toFixed(2)
+    );
+    console.log(
+      'Sampled tweets are saved in %s', filepath
+    );
   });
 }
 
