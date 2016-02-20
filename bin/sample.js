@@ -1,52 +1,55 @@
 var fs = require('fs');
-var grunt = require('grunt');
-
-var stream = require('../lib/stream');
-var parse = require('../lib/parse');
-var dump = require('../lib/dump');
+var ApiReader = require('../lib/ApiReader');
+var DbWriter = require('../lib/DbWriter');
+var FileReader = require('../lib/FileReader');
+var FileWriter = require('../lib/FileWriter');
 
 /**
  * Take a number of sample tweets from Twitter and writes into a file.
  */
-function sample(keypath, total, filepath, done) {
-  /**
-   * Load Twitter API keys from stdin. It looks like this:
-   * {
-   *   "consumer_key": ...,
-   *   "consumer_secret": ...,
-   *   "access_token": ...,
-   *   "access_token_secret": ...
-   * }
-   */
-  var keys = grunt.file.readJSON(keypath);
+function sample(options, done) {
+  var input_from_file = false
+    , output_to_file = false;
 
-  /** Create tweets stream. */
-  var input = stream(keys, total);
+  if (typeof options.input === 'string') {
+    input_from_file = true;
+  }
 
-  /** Create parse stream. */
-  var parser = parse();
+  if (typeof options.output === 'string') {
+    output_to_file = true;
+  }
 
-  /** Create dump stream. */
-  var output = dump(filepath);
+  console.log(
+    'Loading tweets from %s to %s...',
+    input_from_file ? options.input : 'Twitter API',
+    output_to_file ? options.output : options.output.database
+  );
 
-  console.log('Sampling %d tweets from Twitter...', total);
+  /** Create input stream. */
+  var input = (
+    input_from_file ? FileReader(options.input) : ApiReader(options.input)
+  );
+
+  /** Create output stream. */
+  var output = (
+    output_to_file ? FileWriter(options.output) : DbWriter(options.output)
+  );
 
   /** Start timeing region. */
   var time = Date.now();
 
-  input.pipe(parser).pipe(output);
+  input.pipe(output);
 
-  output.on('close', function() {
+  output.on('close', function(total) {
     /** End timeing region. */
-    time = Date.now() - time;
-    rate = total * 1000 / time;
+    time = (Date.now() - time) / 1000;
 
     console.log(
-      'Completed in %d seconds (%d tweets per second).',
-      time / 1000, rate.toFixed(2)
-    );
-    console.log(
-      'Sampled tweets are saved in %s', filepath
+      'Loaded %d tweets into %s (took %s seconds, %s tweets per second).',
+      total,
+      ( output_to_file ? options.output : options.output.database ),
+      time.toFixed(2),
+      (total / time).toFixed(2)
     );
   });
 }
@@ -55,11 +58,14 @@ function sample(keypath, total, filepath, done) {
  * Execute if this script is called directly.
  */
 if (require.main == module) {
-  var keys = process.argv[2] || 'keys.json';
-  var total = process.argv[3] || 1000;
-  var output = process.argv[4] || 'data/sample.txt';
+  var options = {
+    input: JSON.parse(fs.readFileSync('keys.json', 'utf8')),
+    output: JSON.parse(fs.readFileSync('database.json', 'utf8')).dev
+  };
 
-  sample(keys, total, output, () => {});
+  options.input.limit = 1000;
+
+  sample(options, function() {});
 } else {
   module.exports = sample;
 }

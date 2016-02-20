@@ -12,9 +12,9 @@ module.exports = function(grunt) {
      */
     sample: {
       options: {
-        keys: 'keys.json',
-        total: 65536,
-        output: 'data/sample.txt'
+        input: grunt.file.readJSON('keys.json'),
+        output: grunt.file.readJSON('database.json').dev,
+        limit: 65536
       }
     }
   });
@@ -29,7 +29,9 @@ module.exports = function(grunt) {
       var sample = require('./bin/sample');
       var options = this.options();
       var done = this.async();
-      sample(options.keys, options.total, options.output, done);
+
+      options.input.limit = options.limit;
+      sample(options, done);
     }
   );
 

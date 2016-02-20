@@ -1,0 +1,12 @@
+{
+  "dev": {
+    "driver": "mysql",
+    "user": "root",
+    "password": "cha0ran",
+    "host": "localhost",
+    "database": "tweets-map-dev",
+    "multipleStatements": true,
+    "supportBigNumbers": true,
+    "bigNumberStrings": true
+  }
+}
